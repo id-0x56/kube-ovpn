@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: 00x56/kubernetes-openvpn
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -16,7 +16,7 @@ fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
@@ -28,8 +28,10 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
-  # capabilities:
+securityContext:
+  capabilities:
+    add:
+      - NET_ADMIN
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
@@ -37,8 +39,10 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: ClusterIP
-  port: 80
+  type: NodePort
+  nodePort: 31194
+  targetPort: 1194
+  port: 1194
 
 ingress:
   enabled: false
@@ -80,3 +84,37 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 10
+
+openvpn:
+  ta_key: |
+    -----BEGIN OpenVPN Static key V1-----
+    -----END OpenVPN Static key V1-----
+
+  ca_crt: |
+    -----BEGIN CERTIFICATE-----
+    -----END CERTIFICATE-----
+
+  server_crt: |
+    -----BEGIN CERTIFICATE-----
+    -----END CERTIFICATE-----
+
+  server_key: |
+    -----BEGIN PRIVATE KEY-----
+    -----END PRIVATE KEY-----
+
+  ccd:
+    user-01: "ifconfig-push 10.8.0.11 255.255.255.0"
+    user-02: "ifconfig-push 10.8.0.12 255.255.255.0"
+    user-03: "ifconfig-push 10.8.0.13 255.255.255.0"
+    user-04: "ifconfig-push 10.8.0.14 255.255.255.0"
+    user-05: "ifconfig-push 10.8.0.15 255.255.255.0"

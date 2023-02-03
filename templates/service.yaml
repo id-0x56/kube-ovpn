@@ -8,8 +8,11 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
+      {{- if hasKey .Values.service "nodePort" }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: UDP
       name: http
   selector:
     {{- include "openvpn.selectorLabels" . | nindent 4 }}

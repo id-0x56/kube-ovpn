@@ -27,26 +27,89 @@ spec:
       serviceAccountName: {{ include "openvpn.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-sysctl
+          image: busybox:latest
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [ "/bin/sh", "-c", "sysctl -w net.ipv4.ip_forward=1" ]
+          securityContext:
+            privileged: true
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+
+              /sbin/iptables -I INPUT -i eth0 -m conntrack --ctstate NEW -p udp --dport {{ .Values.service.port }} -j ACCEPT
+
+              /sbin/iptables -I FORWARD -i tun+ -j ACCEPT
+              /sbin/iptables -I FORWARD -i tun+ -o eth0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+              /sbin/iptables -I FORWARD -i eth0 -o tun+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+              /sbin/iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+
+              /sbin/iptables -A OUTPUT -o tun+ -j ACCEPT
+
+
+              exec /usr/sbin/openvpn --config /etc/openvpn/server/server.conf
           ports:
             - name: http
-              containerPort: 80
-              protocol: TCP
+              containerPort: {{ .Values.service.port }}
+              protocol: UDP
           livenessProbe:
-            httpGet:
-              path: /
-              port: http
+            exec:
+              command: [ "/bin/sh", "-c", "nc -uz 127.0.0.1 {{ .Values.service.port }}" ]
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
           readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            exec:
+              command: [ "/bin/sh", "-c", "nc -uz 127.0.0.1 {{ .Values.service.port }}" ]
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: dev-tun
+              mountPath: /dev/net/tun
+            - name: server-config
+              mountPath: /etc/openvpn/server/server.conf
+              subPath: server.conf
+            - name: server-config-ccd
+              mountPath: /etc/openvpn/ccd
+            - name: certs-secret
+              mountPath: /etc/openvpn/easy-rsa/pki/ta.key
+              subPath: ta.key
+            - name: certs-secret
+              mountPath: /etc/openvpn/easy-rsa/pki/ca.crt
+              subPath: ca.crt
+            - name: certs-secret
+              mountPath: /etc/openvpn/easy-rsa/pki/issued/server.crt
+              subPath: server.crt
+            - name: certs-secret
+              mountPath: /etc/openvpn/easy-rsa/pki/private/server.key
+              subPath: server.key
+      volumes:
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun
+        - name: server-config
+          configMap:
+            name: {{ include "openvpn.fullname" . }}
+        - name: server-config-ccd
+          configMap:
+            name: {{ include "openvpn.fullname" . }}-ccd
+        - name: certs-secret
+          secret:
+            secretName: {{ include "openvpn.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
