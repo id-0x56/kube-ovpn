@@ -96,6 +96,8 @@ readinessProbe:
   timeoutSeconds: 10
 
 openvpn:
+  network: 10.8.0.0
+  
   ta_key: |
     -----BEGIN OpenVPN Static key V1-----
     -----END OpenVPN Static key V1-----

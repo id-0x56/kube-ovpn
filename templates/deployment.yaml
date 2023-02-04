@@ -53,7 +53,7 @@ spec:
               /sbin/iptables -I FORWARD -i tun+ -o eth0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
               /sbin/iptables -I FORWARD -i eth0 -o tun+ -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
-              /sbin/iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+              /sbin/iptables -t nat -A POSTROUTING -s {{ .Values.openvpn.network }}/24 -o eth0 -j MASQUERADE
 
               /sbin/iptables -A OUTPUT -o tun+ -j ACCEPT
 
