@@ -115,7 +115,9 @@ openvpn:
     -----END PRIVATE KEY-----
 
   ccd:
-    user-01: "ifconfig-push 10.8.0.11 255.255.255.0"
+    user-01: |
+      ifconfig-push 10.8.0.11 255.255.255.0
+      push "route 192.168.88.0 255.255.255.0"
     user-02: "ifconfig-push 10.8.0.12 255.255.255.0"
     user-03: "ifconfig-push 10.8.0.13 255.255.255.0"
     user-04: "ifconfig-push 10.8.0.14 255.255.255.0"
