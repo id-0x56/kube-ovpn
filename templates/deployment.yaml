@@ -46,7 +46,6 @@ spec:
             - |
               set -e
 
-
               /sbin/iptables -I INPUT -i eth0 -m conntrack --ctstate NEW -p udp --dport {{ .Values.service.port }} -j ACCEPT
 
               /sbin/iptables -I FORWARD -i tun+ -j ACCEPT
