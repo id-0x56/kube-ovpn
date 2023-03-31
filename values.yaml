@@ -39,6 +39,8 @@ securityContext:
   # runAsUser: 1000
 
 service:
+  annotations: {}
+    # metallb.universe.tf/loadBalancerIPs: 192.168.0.100
   type: NodePort
   nodePort: 31194
   targetPort: 1194
