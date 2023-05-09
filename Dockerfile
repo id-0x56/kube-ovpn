@@ -2,6 +2,7 @@ FROM alpine:latest
 
 RUN apk update \
     && apk add --no-cache iptables openvpn easy-rsa \
+    && rm -rf /var/cache/apk/* /var/tmp/* \
     #
     && mkdir -p /etc/openvpn/easy-rsa \
     && cd /etc/openvpn/easy-rsa \
